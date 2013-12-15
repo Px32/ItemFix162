@@ -1,0 +1,7 @@
+  name: ItemFix164
+  main: com.grumpycraft.itemfix164.ItemFix164
+  version: 0.1
+  author: Rhaged
+  commands:
+    reloaditemfix:
+      description: reloaditemfix
