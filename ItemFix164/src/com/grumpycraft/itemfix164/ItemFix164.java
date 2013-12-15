@@ -25,6 +25,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -153,114 +154,116 @@ public class ItemFix164 extends JavaPlugin {
 			return;
 		}
 		@EventHandler
-		public void Target(EntityTargetLivingEntityEvent event){
-			if(event.getEntityType().equals(EntityType.PLAYER)==true){
-				Player player=event.getEntity();	
+		public void Target(EntityTargetEvent event){
+			if((event.getEntity() instanceof Player) && (event.getTarget() instanceof Player)){
+				Player player = (Player) event.getEntity();
+				Player target = (Player) event.getTarget();
 				if(DontLookAtMeWithThat.contains(player.getItemInHand().getTypeId())){
-				}
-			}
-		}
-		@EventHandler
-		public void InventoryClose(InventoryCloseEvent event) {
-			HumanEntity human =  event.getView().getPlayer();
-			if(human instanceof Player)
-			{
-				Player player = (Player)human;
-				if(NotAllowedOutSideClaimWorld.contains(player.getItemInHand().getTypeId())){
-					Block block=player.getTargetBlock(null, 50);
-					if(block!=null){
-						player.sendMessage(ChatColor.RED+"You cant not Hold that here!");					
-						CheckBar(player);
-						return;
-					}
-				}
-				if(NotAllowedOutSideClaim.contains(player.getItemInHand().getTypeId())){
-					Block block=player.getTargetBlock(null, 50);
-					if(InsideClaimNotOwnedByPlayer(block.getLocation(),player)==true){
-						player.sendMessage(ChatColor.RED+"You cant not Hold that here!");		
-						CheckBar(player);
-						return;
-					}		
-				}
-				if(DontLookAtMeWithThat.contains(player.getItemInHand().getTypeId())){
-					List<Entity> Near=player.getNearbyEntities(25, 25, 25);
-					if(Near!=null){
-						for(Entity N:Near){
-							if(N.getType()==EntityType.PLAYER){
-								if(!N.equals(player)){
-									player.sendMessage("Dev-a");
-									CheckBar(player);
-									return;
-								}
-							}
-						}
-					}
-				}
-			}
-		}	
-		public boolean InsideClaimNotOwnedByPlayer(Location Loc, Player player){
-			Claim claim = GriefPrevention.instance.dataStore.getClaimAt(Loc, true, null);
-			if(claim==null)return false;
-			if(claim!=null && !claim.getOwnerName().equalsIgnoreCase(player.getName()))return true;
-			return false;
-		}
-		public boolean IsSplashy(Player player, int R, Block block){
-			if(NotAllowedOutSideClaimSplash.contains(player.getItemInHand().getTypeId())){
-				for(double x=block.getLocation().getX()-R;x<block.getLocation().getX()+R;x++){
-					for(double y=block.getLocation().getY()-R;y<block.getLocation().getY()+R;y++){
-						for(double z=block.getLocation().getZ()-R;z<block.getLocation().getZ()+R;z++){
-							if(InsideClaimNotOwnedByPlayer(new Location(player.getWorld(),x,y,z),player)==true){
-								return true;
-							}
-						}
-					}
-				}
-			}
-			return false;
-		}
-		@SuppressWarnings("deprecation")
-		public void CheckBar(Player player){
-			int pInv = 9;
-			ItemStack item = new ItemStack(0);
-			int Tally=0;
-			int Slot=player.getInventory().getHeldItemSlot();
-			if(Mlist.contains(player.getItemInHand().getTypeId())){
-				for(int i=9;i<36;i++){
-					if(player.getInventory().getItem(i)!=null){
-						if(Mlist.contains(player.getInventory().getItem(i).getTypeId()))Tally++;
-					}
-				}
-				if(Tally==27){
-					if(player.getInventory().getItem(Slot)!=null){
-						if(Mlist.contains(player.getInventory().getItem(Slot).getTypeId())){
-							player.sendMessage(ChatColor.DARK_RED+"["+ChatColor.GOLD+"AntiGrief"+ChatColor.RED+"] "+ChatColor.GREEN+"You don't have"+ChatColor.RED+"Inventory"+ChatColor.GREEN+"space for a restricted item, It has been mailed to you!"+ChatColor.GOLD+" If your mailbox has room"+ChatColor.GREEN+"!");							
-							player.getInventory().setItem(Slot, item);
-							player.updateInventory();
-						}
-					}	
-					return;
-				}
-				if(player.getInventory().getItem(Slot)!=null && Mlist.contains(player.getInventory().getItem(Slot).getTypeId())){
-					while(pInv < 36)
-					{
-						if((player.getInventory().getItem(Slot) != null && Mlist.contains(player.getInventory().getItem(Slot).getTypeId())) && (player.getInventory().getItem(pInv) == null || !Mlist.contains(player.getInventory().getItem(pInv).getTypeId())))
-						{	
-							item = player.getInventory().getItem(Slot);
-							player.getInventory().setItem(Slot, player.getInventory().getItem(pInv));
-							player.getInventory().setItem(pInv, item);
-							Inventory I=player.getInventory();
-							player.getInventory().setContents(I.getContents());						
-							pInv=36;						
-							return;						    
-						}
-						pInv++;
-					}	
+					player.getItemInHand().setType(Material.AIR);
+					player.sendMessage(target+" Dont look at me with that!");
 				}
 			}
 		}
 	}
-}	
-
+	@EventHandler
+	public void InventoryClose(InventoryCloseEvent event) {
+		HumanEntity human =  event.getView().getPlayer();
+		if(human instanceof Player)
+		{
+			Player player = (Player)human;
+			if(NotAllowedOutSideClaimWorld.contains(player.getItemInHand().getTypeId())){
+				Block block=player.getTargetBlock(null, 50);
+				if(block!=null){
+					player.sendMessage(ChatColor.RED+"You cant not Hold that here!");					
+					CheckBar(player);
+					return;
+				}
+			}
+			if(NotAllowedOutSideClaim.contains(player.getItemInHand().getTypeId())){
+				Block block=player.getTargetBlock(null, 50);
+				if(InsideClaimNotOwnedByPlayer(block.getLocation(),player)==true){
+					player.sendMessage(ChatColor.RED+"You cant not Hold that here!");		
+					CheckBar(player);
+					return;
+				}		
+			}
+			if(DontLookAtMeWithThat.contains(player.getItemInHand().getTypeId())){
+				List<Entity> Near=player.getNearbyEntities(25, 25, 25);
+				if(Near!=null){
+					for(Entity N:Near){
+						if(N.getType()==EntityType.PLAYER){
+							if(!N.equals(player)){
+								player.sendMessage("Dev-a");
+								CheckBar(player);
+								return;
+							}
+						}
+					}
+				}
+			}
+		}
+	}	
+	public boolean InsideClaimNotOwnedByPlayer(Location Loc, Player player){
+		Claim claim = GriefPrevention.instance.dataStore.getClaimAt(Loc, true, null);
+		if(claim==null)return false;
+		if(claim!=null && !claim.getOwnerName().equalsIgnoreCase(player.getName()))return true;
+		return false;
+	}
+	public boolean IsSplashy(Player player, int R, Block block){
+		if(NotAllowedOutSideClaimSplash.contains(player.getItemInHand().getTypeId())){
+			for(double x=block.getLocation().getX()-R;x<block.getLocation().getX()+R;x++){
+				for(double y=block.getLocation().getY()-R;y<block.getLocation().getY()+R;y++){
+					for(double z=block.getLocation().getZ()-R;z<block.getLocation().getZ()+R;z++){
+						if(InsideClaimNotOwnedByPlayer(new Location(player.getWorld(),x,y,z),player)==true){
+							return true;
+						}
+					}
+				}
+			}
+		}
+		return false;
+	}
+	@SuppressWarnings("deprecation")
+	public void CheckBar(Player player){
+		int pInv = 9;
+		ItemStack item = new ItemStack(0);
+		int Tally=0;
+		int Slot=player.getInventory().getHeldItemSlot();
+		if(Mlist.contains(player.getItemInHand().getTypeId())){
+			for(int i=9;i<36;i++){
+				if(player.getInventory().getItem(i)!=null){
+					if(Mlist.contains(player.getInventory().getItem(i).getTypeId()))Tally++;
+				}
+			}
+			if(Tally==27){
+				if(player.getInventory().getItem(Slot)!=null){
+					if(Mlist.contains(player.getInventory().getItem(Slot).getTypeId())){
+						player.sendMessage(ChatColor.DARK_RED+"["+ChatColor.GOLD+"AntiGrief"+ChatColor.RED+"] "+ChatColor.GREEN+"You don't have"+ChatColor.RED+"Inventory"+ChatColor.GREEN+"space for a restricted item, It has been mailed to you!"+ChatColor.GOLD+" If your mailbox has room"+ChatColor.GREEN+"!");							
+						player.getInventory().setItem(Slot, item);
+						player.updateInventory();
+					}
+				}	
+				return;
+			}
+			if(player.getInventory().getItem(Slot)!=null && Mlist.contains(player.getInventory().getItem(Slot).getTypeId())){
+				while(pInv < 36)
+				{
+					if((player.getInventory().getItem(Slot) != null && Mlist.contains(player.getInventory().getItem(Slot).getTypeId())) && (player.getInventory().getItem(pInv) == null || !Mlist.contains(player.getInventory().getItem(pInv).getTypeId())))
+					{	
+						item = player.getInventory().getItem(Slot);
+						player.getInventory().setItem(Slot, player.getInventory().getItem(pInv));
+						player.getInventory().setItem(pInv, item);
+						Inventory I=player.getInventory();
+						player.getInventory().setContents(I.getContents());						
+						pInv=36;						
+						return;						    
+					}
+					pInv++;
+				}	
+			}
+		}
+	}
+}
 
 
 
