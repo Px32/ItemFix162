@@ -11,6 +11,7 @@ import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -24,11 +25,13 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
+
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 public class ItemFix164 extends JavaPlugin {
@@ -44,12 +47,7 @@ public class ItemFix164 extends JavaPlugin {
 	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
 		if(sender.isOp() && commandLabel.equalsIgnoreCase("reloaditemfix")){
 			Load();
-			sender.sendMessage("CfgReloaded");
 		}
-		else{
-			sender.sendMessage("You no op");
-			return false;
-		}	
 		return false;
 	}
 	private void firstRun() throws Exception {
@@ -87,6 +85,7 @@ public class ItemFix164 extends JavaPlugin {
 		}
 	}
 	public void Load(){
+		System.out.println("Reloading ItemFix");
 		loadYamls();
 		NotAllowedOutSideClaimWorld=LoadCfg(config.getIntegerList("NotAllowedOutSideClaimWorld"),NotAllowedOutSideClaimWorld);
 		NotAllowedOutSideClaim=LoadCfg(config.getIntegerList("NotAllowedOutSideClaim"),NotAllowedOutSideClaim);
@@ -96,21 +95,15 @@ public class ItemFix164 extends JavaPlugin {
 		DontLookAtMeWithThat=LoadCfg(config.getIntegerList("DontLookAtMeWithThat"),DontLookAtMeWithThat);
 		Mlist.addAll(NotAllowedOutSideClaimWorld);Mlist.addAll(NotAllowedOutSideClaim);Mlist.addAll(DontLookAtMeWithThat);
 		saveYamls();
-		for(int i:Mlist){
-			Bukkit.getServer().broadcastMessage(""+i);
-		}
 	}
 	public List<Integer> LoadCfg(List<Integer> s,List<Integer> i){
 		List<Integer> I=new ArrayList<Integer>();
 		if(s!=null){
 			for(int inc=0;inc<s.size();inc++){
-				I.add(new Integer(s.get(inc)));
-				Bukkit.getServer().broadcastMessage(""+I.get(inc));
+				if(s.get(inc)!=0)I.add(new Integer(s.get(inc)));
 			}
 		}
-		if(s==null){
-			I.add(9999);
-		}
+		else I.add(99999);
 		return(I);
 	}
 	@Override
@@ -136,56 +129,37 @@ public class ItemFix164 extends JavaPlugin {
 	public class Fix implements Listener {				
 		@EventHandler
 		public void Break(BlockBreakEvent event){
-			Block block=event.getPlayer().getTargetBlock(null, 25);
-			if(NotAllowedOutSideClaimWorld.contains(event.getPlayer().getItemInHand().getTypeId())){
-				if(InsideClaimNotOwnedByPlayer(block.getLocation(),event.getPlayer())==true){
+			final Block block=event.getPlayer().getTargetBlock(null, 25);
+			if(block!=null){ 
+				if(((NotAllowedOutSideClaimWorld.contains(event.getPlayer().getItemInHand().getTypeId()) || (NotAllowedOutSideClaim.contains(event.getPlayer().getItemInHand().getTypeId()))) && InsideClaimNotOwnedByPlayer(block.getLocation(),event.getPlayer())==true) || IsSplashy(event.getPlayer(),2,block)==true){
 					event.getPlayer().sendMessage(ChatColor.RED+"You cant not Break that!");
+					CheckBar(event.getPlayer());
 					event.setCancelled(true);
 					return;
 				}
-			}
-			if(NotAllowedOutSideClaim.contains(event.getPlayer().getItemInHand().getTypeId())){
-				if(InsideClaimNotOwnedByPlayer(block.getLocation(),event.getPlayer())==true){
-					event.getPlayer().sendMessage(ChatColor.RED+"You cant not Break that!");
-					event.setCancelled(true);
-					return;
-				}
-			}
-			if(IsSplashy(event.getPlayer(),2,block)==true){
-				event.getPlayer().sendMessage(ChatColor.RED+"You cant not Break that!");
-				CheckBar(event.getPlayer());
-				event.setCancelled(true);
-				return;
 			}
 			return;
 		}
 		@EventHandler
 		public void Move(PlayerMoveEvent event){
-			if(NotAllowedOutSideClaimWorld.contains(event.getPlayer().getItemInHand().getTypeId())){
-				Block block=event.getPlayer().getTargetBlock(null, 50);
-				if(block!=null){
+			Block block=event.getPlayer().getTargetBlock(null, 50);
+			if(block!=null && !block.equals(Material.AIR)){
+				if(NotAllowedOutSideClaimWorld.contains(event.getPlayer().getItemInHand().getTypeId()) || NotAllowedOutSideClaim.contains(event.getPlayer().getItemInHand().getTypeId())){
 					CheckBar(event.getPlayer());
 					event.getPlayer().sendMessage(ChatColor.RED+"You cant not Hold that here!");	
 					return;
 				}
 			}
-			if(NotAllowedOutSideClaim.contains(event.getPlayer().getItemInHand().getTypeId())){
-				Block block=event.getPlayer().getTargetBlock(null, 50);
-				if(InsideClaimNotOwnedByPlayer(block.getLocation(),event.getPlayer())==true){
-					event.getPlayer().sendMessage(ChatColor.RED+"You cant not Hold that here!");				
-					CheckBar(event.getPlayer());
-					return;
-				}		
-			}
 			return;
 		}
-	/*	@EventHandler
+		@EventHandler
 		public void Target(EntityTargetLivingEntityEvent event){
-			if(event.getTarget().equals(EntityType.PLAYER)){
-				Entity P=event.getEntity();
-				//if(P.)
+			if(event.getEntityType().equals(EntityType.PLAYER)==true){
+				Player player=event.getEntity();	
+				if(DontLookAtMeWithThat.contains(player.getItemInHand().getTypeId())){
+				}
 			}
-		}*/
+		}
 		@EventHandler
 		public void InventoryClose(InventoryCloseEvent event) {
 			HumanEntity human =  event.getView().getPlayer();
@@ -286,3 +260,18 @@ public class ItemFix164 extends JavaPlugin {
 		}
 	}
 }	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
