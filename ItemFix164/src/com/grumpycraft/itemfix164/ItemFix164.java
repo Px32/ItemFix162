@@ -28,6 +28,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -164,6 +165,13 @@ public class ItemFix164 extends JavaPlugin {
 				}
 			}
 		}
+	}
+	@EventHandler
+	public void HotBarSwap(PlayerItemHeldEvent event){
+		if(Mlist.contains(event.getPlayer().getItemInHand().getTypeId())){
+		event.setCancelled(true);
+		return;
+	}
 	}
 	@EventHandler
 	public void InventoryClose(InventoryCloseEvent event) {
