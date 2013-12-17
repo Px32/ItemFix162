@@ -24,10 +24,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
-import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.Inventory;
@@ -39,13 +40,13 @@ import java.io.OutputStream;
 public class ItemFix164 extends JavaPlugin {
 	File configFile;
 	FileConfiguration config;	
-	public List<Integer> NotAllowedOutSideClaimWorld=new ArrayList<Integer>();
-	public List<Integer> NotAllowedOutSideClaim=new ArrayList<Integer>();
-	public List<Integer> NotAllowedOutSideClaimSplash=new ArrayList<Integer>();
+	public List<Integer> DisableHoldingWorld=new ArrayList<Integer>();
+	public List<Integer> DisableHoldingClaim=new ArrayList<Integer>();
+	public List<Integer> DisableSplashNearClaim=new ArrayList<Integer>();
 	public List<Integer> DisableRightClick=new ArrayList<Integer>();
 	public List<Integer> DisableLeftClick=new ArrayList<Integer>();
-	public List<Integer> DontLookAtMeWithThat=new ArrayList<Integer>();
-	public List<Integer> Mlist=new ArrayList<Integer>();
+	public List<Integer> DisableLookingAtPlayer=new ArrayList<Integer>();
+	public List<Integer> MasterList=new ArrayList<Integer>();
 	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
 		if(sender.isOp() && commandLabel.equalsIgnoreCase("reloaditemfix")){
 			Load();
@@ -89,13 +90,13 @@ public class ItemFix164 extends JavaPlugin {
 	public void Load(){
 		System.out.println("Reloading ItemFix");
 		loadYamls();
-		NotAllowedOutSideClaimWorld=LoadCfg(config.getIntegerList("NotAllowedOutSideClaimWorld"),NotAllowedOutSideClaimWorld);
-		NotAllowedOutSideClaim=LoadCfg(config.getIntegerList("NotAllowedOutSideClaim"),NotAllowedOutSideClaim);
-		NotAllowedOutSideClaimSplash=LoadCfg(config.getIntegerList("NotAllowedOutSideClaimSplash"),NotAllowedOutSideClaimSplash);
+		DisableHoldingWorld=LoadCfg(config.getIntegerList("DisableHoldingWorld"),DisableHoldingWorld);
+		DisableHoldingClaim=LoadCfg(config.getIntegerList("DisableHoldingClaim"),DisableHoldingClaim);
+		DisableSplashNearClaim=LoadCfg(config.getIntegerList("DisableSplashNearClaim"),DisableSplashNearClaim);
 		DisableRightClick=LoadCfg(config.getIntegerList("DisableRightClick"),DisableRightClick);
 		DisableLeftClick=LoadCfg(config.getIntegerList("DisableLeftClick"),DisableLeftClick);
-		DontLookAtMeWithThat=LoadCfg(config.getIntegerList("DontLookAtMeWithThat"),DontLookAtMeWithThat);
-		Mlist.addAll(NotAllowedOutSideClaimWorld);Mlist.addAll(NotAllowedOutSideClaim);Mlist.addAll(DontLookAtMeWithThat);
+		DisableLookingAtPlayer=LoadCfg(config.getIntegerList("DisableLookingAtPlayer"),DisableLookingAtPlayer);
+		MasterList.addAll(DisableHoldingWorld);MasterList.addAll(DisableHoldingClaim);MasterList.addAll(DisableLookingAtPlayer);
 		saveYamls();
 	}
 	public List<Integer> LoadCfg(List<Integer> s,List<Integer> i){
@@ -130,149 +131,239 @@ public class ItemFix164 extends JavaPlugin {
 	}	
 	public class Fix implements Listener {				
 		@EventHandler
-		public void Break(BlockBreakEvent event){
+		public final void Break(BlockBreakEvent event){
 			final Block block=event.getPlayer().getTargetBlock(null, 25);
-			if(block!=null){ 
-				if(((NotAllowedOutSideClaimWorld.contains(event.getPlayer().getItemInHand().getTypeId()) || (NotAllowedOutSideClaim.contains(event.getPlayer().getItemInHand().getTypeId()))) && InsideClaimNotOwnedByPlayer(block.getLocation(),event.getPlayer())==true) || IsSplashy(event.getPlayer(),2,block)==true){
-					event.getPlayer().sendMessage(ChatColor.RED+"You cant not Break that!");
-					CheckBar(event.getPlayer());
+			if(block!=null && !block.equals(Material.AIR)){
+				if(DisableHoldingWorld.contains(event.getPlayer().getItemInHand().getTypeId()) && CheckClaim(block.getLocation(),event.getPlayer())=="nc"){
+					CheckBar(event.getPlayer(),ChatColor.RED+"You cant not Break that, "+ChatColor.DARK_RED+"Outside your claim!");
 					event.setCancelled(true);
-					return;
 				}
+				else if(DisableHoldingClaim.contains(event.getPlayer().getItemInHand().getTypeId()) &&  CheckClaim(block.getLocation(),event.getPlayer())=="nyc"){
+					CheckBar(event.getPlayer(),ChatColor.RED+"You cant not Break that, "+ChatColor.DARK_RED+"That is not your claim!");
+					event.setCancelled(true);
+				}
+				else if(IsSplashy(event.getPlayer(),2,block)==true){
+					CheckBar(event.getPlayer(),ChatColor.RED+"You cant not Break that, "+ChatColor.DARK_RED+"Near this claim!");
+					event.setCancelled(true);
+				}
+				else return;
 			}
-			return;
 		}
 		@EventHandler
-		public void Move(PlayerMoveEvent event){
+		public final void Move(PlayerMoveEvent event){
+			final Block block=event.getPlayer().getTargetBlock(null, 50);
+			if(block!=null && !block.equals(Material.AIR)){
+				if(DisableHoldingWorld.contains(event.getPlayer().getItemInHand().getTypeId()) && CheckClaim(block.getLocation(),event.getPlayer())=="nc"){
+					CheckBar(event.getPlayer(),ChatColor.RED+"You can only hold that, "+ChatColor.DARK_RED+"While in claim!");
+					event.setCancelled(true);
+				}
+				else if(DisableHoldingClaim.contains(event.getPlayer().getItemInHand().getTypeId()) &&  CheckClaim(block.getLocation(),event.getPlayer())=="nyc"){
+					CheckBar(event.getPlayer(),ChatColor.RED+"You can only hold that, "+ChatColor.DARK_RED+"While not in a claim that is not yours!");
+					event.setCancelled(true);
+				}
+				else return;
+			}
+		}
+		@EventHandler
+		public void Interact(PlayerInteractEvent event){
+			Action action=event.getAction();
 			Block block=event.getPlayer().getTargetBlock(null, 50);
 			if(block!=null && !block.equals(Material.AIR)){
-				if(NotAllowedOutSideClaimWorld.contains(event.getPlayer().getItemInHand().getTypeId()) || NotAllowedOutSideClaim.contains(event.getPlayer().getItemInHand().getTypeId())){
-					CheckBar(event.getPlayer());
-					event.getPlayer().sendMessage(ChatColor.RED+"You cant not Hold that here!");	
-					return;
+				if(MasterList.contains(event.getPlayer().getItemInHand().getTypeId())){
+					if(action == Action.LEFT_CLICK_BLOCK || action == Action.RIGHT_CLICK_BLOCK || action == Action.PHYSICAL || action==Action.LEFT_CLICK_AIR || action==Action.RIGHT_CLICK_AIR){
+						if(DisableHoldingWorld.contains(event.getPlayer().getItemInHand().getTypeId())&& CheckClaim(block.getLocation(),event.getPlayer())=="nc"){
+							CheckBar(event.getPlayer(),"dev-a");
+							event.setCancelled(true);
+						}
+						else if(DisableHoldingClaim.contains(event.getPlayer().getItemInHand().getTypeId()) && CheckClaim(block.getLocation(),event.getPlayer())=="nyc"){
+							CheckBar(event.getPlayer(),"dev-b");
+							event.setCancelled(true);
+						}
+						else if(IsSplashy(event.getPlayer(),2,block)==true){
+							CheckBar(event.getPlayer(),"dev-c");						
+							event.setCancelled(true);
+						}
+						else if(block.getTypeId()==2174 && (CheckClaim(block.getLocation(),event.getPlayer())=="nyc")){
+							event.getPlayer().teleport(new Location(event.getPlayer().getWorld(),event.getPlayer().getLocation().getBlockX(),event.getPlayer().getLocation().getBlockY(),event.getPlayer().getLocation().getBlockZ(),event.getPlayer().getLocation().getYaw()*-1,event.getPlayer().getLocation().getPitch()));
+							event.setCancelled(true);
+						}
+						else return;
+					}
 				}
+				if(action==Action.LEFT_CLICK_BLOCK && DisableLeftClick.contains(event.getPlayer().getItemInHand().getTypeId()))event.setCancelled(true);
+				else if(action==Action.RIGHT_CLICK_BLOCK && DisableRightClick.contains(event.getPlayer().getItemInHand().getTypeId()))event.setCancelled(true);
+				else return;
 			}
-			return;
 		}
 		@EventHandler
-		public void Target(EntityTargetEvent event){
+		public final void Target(EntityTargetEvent event){
+			Bukkit.getServer().broadcastMessage("T+"+event.getTarget().getType());
+			Bukkit.getServer().broadcastMessage("P+"+event.getEntity().getType());
 			if((event.getEntity() instanceof Player) && (event.getTarget() instanceof Player)){
-				Player player = (Player) event.getEntity();
-				Player target = (Player) event.getTarget();
-				if(DontLookAtMeWithThat.contains(player.getItemInHand().getTypeId())){
+				final Player player = (Player) event.getEntity();
+				final Player target = (Player) event.getTarget();
+				if(DisableLookingAtPlayer.contains(player.getItemInHand().getTypeId())){
 					player.getItemInHand().setType(Material.AIR);
-					player.sendMessage(target+" Dont look at me with that!");
+					CheckBar(player,ChatColor.RED+"Dont't loot at "+target.getName()+" with that!");
 				}
 			}
 		}
-	}
-	@EventHandler
-	public void HotBarSwap(PlayerItemHeldEvent event){
-		if(Mlist.contains(event.getPlayer().getItemInHand().getTypeId())){
-		event.setCancelled(true);
-		return;
-	}
-	}
-	@EventHandler
-	public void InventoryClose(InventoryCloseEvent event) {
-		HumanEntity human =  event.getView().getPlayer();
-		if(human instanceof Player)
-		{
-			Player player = (Player)human;
-			if(NotAllowedOutSideClaimWorld.contains(player.getItemInHand().getTypeId())){
-				Block block=player.getTargetBlock(null, 50);
-				if(block!=null){
-					player.sendMessage(ChatColor.RED+"You cant not Hold that here!");					
-					CheckBar(player);
-					return;
-				}
+		@EventHandler
+		public final void HotBarSwap(PlayerItemHeldEvent event){
+			if(DisableHoldingWorld.contains(event.getPlayer().getItemInHand().getTypeId())&& CheckClaim(event.getPlayer().getLocation(),event.getPlayer())=="nc"){
+				CheckBar(event.getPlayer(),ChatColor.RED+"You can only swap that, "+ChatColor.DARK_RED+"While in claim!");
 			}
-			if(NotAllowedOutSideClaim.contains(player.getItemInHand().getTypeId())){
-				Block block=player.getTargetBlock(null, 50);
-				if(InsideClaimNotOwnedByPlayer(block.getLocation(),player)==true){
-					player.sendMessage(ChatColor.RED+"You cant not Hold that here!");		
-					CheckBar(player);
-					return;
-				}		
+			else if(DisableHoldingClaim.contains(event.getPlayer().getItemInHand().getTypeId()) && CheckClaim(event.getPlayer().getLocation(),event.getPlayer())=="nyc"){
+				CheckBar(event.getPlayer(),ChatColor.RED+"You can only swap that, "+ChatColor.DARK_RED+"While not in a claim that is not yours!");
 			}
-			if(DontLookAtMeWithThat.contains(player.getItemInHand().getTypeId())){
-				List<Entity> Near=player.getNearbyEntities(25, 25, 25);
+			else if(DisableLookingAtPlayer.contains(event.getPlayer().getItemInHand().getTypeId())){
+				List<Entity> Near=event.getPlayer().getNearbyEntities(25, 25, 25);
 				if(Near!=null){
 					for(Entity N:Near){
-						if(N.getType()==EntityType.PLAYER){
-							if(!N.equals(player)){
-								player.sendMessage("Dev-a");
-								CheckBar(player);
-								return;
+						if(N.getType()==EntityType.PLAYER && !N.equals(event.getPlayer())){
+							CheckBar(event.getPlayer(),"BetaTest1");
+						}
+					}
+				}
+			}
+			else return;
+		}
+		@EventHandler
+		public final void InventoryClose(InventoryCloseEvent event) {
+			HumanEntity human =  event.getView().getPlayer();
+			if(human instanceof Player)
+			{
+				Player player = (Player)human;
+				Block block=event.getPlayer().getTargetBlock(null, 50);
+				if((block!=null && !block.equals(Material.AIR))&&(DisableHoldingWorld.contains(event.getPlayer().getItemInHand().getTypeId()) && CheckClaim(block.getLocation(),player)=="nc")){
+					CheckBar(player,ChatColor.RED+"You can only switch that, "+ChatColor.DARK_RED+"While in claim!");
+				}
+				else if((block!=null && !block.equals(Material.AIR))&&(DisableHoldingClaim.contains(event.getPlayer().getItemInHand().getTypeId()) && CheckClaim(block.getLocation(),player)=="nyc")){
+					CheckBar(player,ChatColor.RED+"You can only switch that, "+ChatColor.DARK_RED+"While not in a claim that is not yours!");
+				}
+				else if(DisableLookingAtPlayer.contains(player.getItemInHand().getTypeId())){
+					List<Entity> Near=player.getNearbyEntities(25, 25, 25);
+					if(Near!=null){
+						for(Entity N:Near){
+							if(N.getType()==EntityType.PLAYER && !N.equals(player)){
+								CheckBar(player,"BetaTest2");
+							}
+						}
+					}
+				}
+				else return;
+			}
+		}	
+		@SuppressWarnings("deprecation")
+		public final String CheckClaim(Location Loc, Player player){
+			Claim claim = GriefPrevention.instance.dataStore.getClaimAt(Loc, true, null);
+			if(claim==null)return "nc";
+			else if(claim!=null && !claim.getOwnerName().equalsIgnoreCase(player.getName()))return "nyc";
+			else if(claim!=null && claim.getOwnerName().equalsIgnoreCase(player.getName()))return "yc";
+			ArrayList<String> builders = new ArrayList<String>();
+			ArrayList<String> containers = new ArrayList<String>();
+			ArrayList<String> accessors = new ArrayList<String>();
+			ArrayList<String> managers = new ArrayList<String>();
+			claim.getPermissions(builders, containers, accessors, managers);
+			player.sendMessage("Explicit permissions here:");
+			StringBuilder permissions = new StringBuilder();
+			permissions.append(ChatColor.GOLD + "M: ");
+			if(managers.size() > 0)
+			{
+				for(int i = 0; i < managers.size(); i++)
+					permissions.append(managers.get(i) + " ");
+			}
+
+			player.sendMessage(permissions.toString());
+			permissions = new StringBuilder();
+			permissions.append(ChatColor.YELLOW + "B: ");
+
+			if(builders.size() > 0)
+			{                                
+				for(int i = 0; i < builders.size(); i++)
+					permissions.append(builders.get(i) + " ");                
+			}
+
+			player.sendMessage(permissions.toString());
+			permissions = new StringBuilder();
+			permissions.append(ChatColor.GREEN + "C: ");                                
+
+			if(containers.size() > 0)
+			{
+				for(int i = 0; i < containers.size(); i++)
+					permissions.append(containers.get(i) + " ");                
+			}
+
+			player.sendMessage(permissions.toString());
+			permissions = new StringBuilder();
+			permissions.append(ChatColor.BLUE + "A :");
+
+			if(accessors.size() > 0)
+			{
+				for(int i = 0; i < accessors.size(); i++)
+					permissions.append(accessors.get(i) + " ");                        
+			}
+
+			player.sendMessage(permissions.toString());
+
+			player.sendMessage("(M-anager, B-builder, C-ontainers, A-ccess)");
+			return "nc";
+
+		}
+		public final boolean IsSplashy(Player player, int R, Block block){
+			if(DisableSplashNearClaim.contains(player.getItemInHand().getTypeId())){
+				for(double x=block.getLocation().getX()-R;x<block.getLocation().getX()+R;x++){
+					for(double y=block.getLocation().getY()-R;y<block.getLocation().getY()+R;y++){
+						for(double z=block.getLocation().getZ()-R;z<block.getLocation().getZ()+R;z++){
+							if(CheckClaim(new Location(player.getWorld(),x,y,z),player)=="nyc"){
+								return true;
 							}
 						}
 					}
 				}
 			}
+			return false;
 		}
-	}	
-	public boolean InsideClaimNotOwnedByPlayer(Location Loc, Player player){
-		Claim claim = GriefPrevention.instance.dataStore.getClaimAt(Loc, true, null);
-		if(claim==null)return false;
-		if(claim!=null && !claim.getOwnerName().equalsIgnoreCase(player.getName()))return true;
-		return false;
-	}
-	public boolean IsSplashy(Player player, int R, Block block){
-		if(NotAllowedOutSideClaimSplash.contains(player.getItemInHand().getTypeId())){
-			for(double x=block.getLocation().getX()-R;x<block.getLocation().getX()+R;x++){
-				for(double y=block.getLocation().getY()-R;y<block.getLocation().getY()+R;y++){
-					for(double z=block.getLocation().getZ()-R;z<block.getLocation().getZ()+R;z++){
-						if(InsideClaimNotOwnedByPlayer(new Location(player.getWorld(),x,y,z),player)==true){
-							return true;
+		@SuppressWarnings("deprecation")
+		public final void CheckBar(Player player, final String M){
+			int pInv = 9,Tally=0,Slot=player.getInventory().getHeldItemSlot();
+			ItemStack item = new ItemStack(0);
+			if(MasterList.contains(player.getItemInHand().getTypeId())){
+				for(int i=9;i<36;i++){
+					if(player.getInventory().getItem(i)!=null){
+						if(MasterList.contains(player.getInventory().getItem(i).getTypeId()))Tally++;
+					}
+				}
+				if(Tally==27){
+					if(player.getInventory().getItem(Slot)!=null){
+						if(MasterList.contains(player.getInventory().getItem(Slot).getTypeId())){
+							player.sendMessage(ChatColor.RED+"You had no free inventory space, for the item to be swapped."+ChatColor.DARK_RED+" It was deleted instead.");							
+							player.getInventory().setItem(Slot, item);
+							player.updateInventory();
 						}
-					}
+					}	
 				}
-			}
-		}
-		return false;
-	}
-	@SuppressWarnings("deprecation")
-	public void CheckBar(Player player){
-		int pInv = 9;
-		ItemStack item = new ItemStack(0);
-		int Tally=0;
-		int Slot=player.getInventory().getHeldItemSlot();
-		if(Mlist.contains(player.getItemInHand().getTypeId())){
-			for(int i=9;i<36;i++){
-				if(player.getInventory().getItem(i)!=null){
-					if(Mlist.contains(player.getInventory().getItem(i).getTypeId()))Tally++;
+				if(player.getInventory().getItem(Slot)!=null && MasterList.contains(player.getInventory().getItem(Slot).getTypeId())){
+					while(pInv < 36)
+					{
+						if((player.getInventory().getItem(Slot) != null && MasterList.contains(player.getInventory().getItem(Slot).getTypeId())) && (player.getInventory().getItem(pInv) == null || !MasterList.contains(player.getInventory().getItem(pInv).getTypeId())))
+						{	
+							item = player.getInventory().getItem(Slot);
+							player.getInventory().setItem(Slot, player.getInventory().getItem(pInv));
+							player.getInventory().setItem(pInv, item);
+							Inventory I=player.getInventory();
+							player.getInventory().setContents(I.getContents());
+							player.sendMessage(M);
+							pInv=36;
+							return;						    
+						}
+						pInv++;
+					}	
 				}
-			}
-			if(Tally==27){
-				if(player.getInventory().getItem(Slot)!=null){
-					if(Mlist.contains(player.getInventory().getItem(Slot).getTypeId())){
-						player.sendMessage(ChatColor.DARK_RED+"["+ChatColor.GOLD+"AntiGrief"+ChatColor.RED+"] "+ChatColor.GREEN+"You don't have"+ChatColor.RED+"Inventory"+ChatColor.GREEN+"space for a restricted item, It has been mailed to you!"+ChatColor.GOLD+" If your mailbox has room"+ChatColor.GREEN+"!");							
-						player.getInventory().setItem(Slot, item);
-						player.updateInventory();
-					}
-				}	
-				return;
-			}
-			if(player.getInventory().getItem(Slot)!=null && Mlist.contains(player.getInventory().getItem(Slot).getTypeId())){
-				while(pInv < 36)
-				{
-					if((player.getInventory().getItem(Slot) != null && Mlist.contains(player.getInventory().getItem(Slot).getTypeId())) && (player.getInventory().getItem(pInv) == null || !Mlist.contains(player.getInventory().getItem(pInv).getTypeId())))
-					{	
-						item = player.getInventory().getItem(Slot);
-						player.getInventory().setItem(Slot, player.getInventory().getItem(pInv));
-						player.getInventory().setItem(pInv, item);
-						Inventory I=player.getInventory();
-						player.getInventory().setContents(I.getContents());						
-						pInv=36;						
-						return;						    
-					}
-					pInv++;
-				}	
 			}
 		}
 	}
 }
-
 
 
 

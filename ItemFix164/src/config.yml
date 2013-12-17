@@ -1,19 +1,60 @@
-NotAllowedOutSideClaimWorld:
-- 0
-- 0
-- 0
-NotAllowedOutSideClaimWorld:
-- 0
-- 0
-- 0
-NotAllowedOutSideClaim:
-- 0
-- 0
-- 0
-NotAllowedOutSideClaimSplash:
-- 0
-- 0
-- 0
+################################################################################
+#   HOW TO USE!        HOW TO USE!        HOW TO USE!        HOW TO USE!       #
+#                                                                              #
+#   Add only the item ID, do not add any numbers after the :                   #
+#   Example if the item is 42376:23 only the 42376 needs to be added           #
+#   Alot the prevntion happens by swapping the item in thier hand with         #
+#   a item that is not on the list. The player will be sent a short            #
+#   message telling them what has happened.                                    #
+################################################################################
+#                                                                              #
+#                                                                              #
+################################################################################
+#                            DisableHoldingWorld                               #
+#   Items in this list will only beable to held inside the plays claim         #
+#   The item will either be swapped or the action will be canceled!!!          #
+#                                                                              #
+################################################################################
+DisableHoldingWorld:
+- 13446
+- 13457
+- 13458
+- 10259
+################################################################################
+#                            DisableHoldingClaim                               #
+#   Items in this list will only get swapped if the player looks in a          #
+#   a claim that is not thiers, players on trust list do NOT count!            #
+#   The player will be able to use this item in thier claim and outside        #
+#   of thier claim and in the world                                            #
+#                                                                              #
+################################################################################
+DisableHoldingClaim:
+- 25266
+- 4363
+- 4364
+################################################################################
+#                            DisableSplashNearClaim                            #
+#   This list is for items that have a splash effect, Tinkers hammers should   #
+#   go here, Everthing else for the most part should end up the lists above    #
+#                                                                              #
+################################################################################
+DisableSplashNearClaim:
+- 14326
+################################################################################
+#                            DisablePlacementToClaim
+#   Items on this list can only be placed within a claim. This list is being
+#   tested but should able to restrict Inlay and other items to be only
+#   placed inside a claim
+
+################################################################################
+#                            DisableRightClick                                 #
+#   WARNING! This list is mainly to disable able gfx glicthing items!          #
+#   An example of such item would be the left click on a portal gun that       #
+#   client side breaks a block. Thou some items like Vajra (ic2) can have      #
+#   the left click disabled as that will bypass a claim. In most cases         #
+#   Disable left/right click will not prevnt greifing!                         #
+#                                                                              #
+################################################################################
 DisableRightClick:
 - 0
 - 0
@@ -22,8 +63,29 @@ DisableLeftClick:
 - 0
 - 0
 - 0
-DontLookAtMeWithThat:
+################################################################################
+#                            DisableLookingAtPlayer                            #
+#   This list is for items with PvP bypass, That damage, or hurt a player      #
+#   when they are used! If a player looks at another player holding one        #
+#   of the items on this list it will be swapped! Even if the intent was       #
+#   not to harm the player. Many items do not pass stuff to bukkit so it       #
+#   is hard to fix them in a differnt way!                                     #
+#                                                                              #
+################################################################################
+DisableLookingAtPlayer:
 - 0
 - 0
 - 0
+################################################################################
+#                            PortalGunRange                                    #
+#   Limit the number of blocks portal A can be away from portal B Targeting    #
+#   the moon has been disabled! If portal guns where added in the 1st list     #
+#   they only can make portals inside thier claim, if it was on the second     #
+#   list they are 2nd list anywhere but someones claim is fair game            #
+#                                                                              #
+################################################################################
+PortalGunRange:
+- 10
+
+
 
